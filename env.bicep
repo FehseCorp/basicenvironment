@@ -105,13 +105,183 @@ module DC './modules/DC/dc.bicep' = {
     hubvnet
   ]
   params: {
-    adminPassword: ''
-    adminUsername: 'azureadmin'
+    adminPassword: adminpassword
+    adminUsername: adminusername
     domainName: 'contoso.com'
     adNicIPAddress: dcIPaddress
     adSubnetAddressPrefix: adSubnetAddressPrefix
     adSubnetName: adSubnetName
     virtualNetworkAddressRange: hubVnetAddressPrefix
     virtualNetworkName: hubvnetname
+  }
+}
+
+module hubvnetupdate '../bicep-registry-modules/avm/res/network/virtual-network/main.bicep' = {
+  name: '${hubvnetname}-update'
+  dependsOn: [
+    DC
+  ]
+  scope: resourceGroup('hub-rg')
+  params: {
+    location: location   
+    addressPrefixes: [
+      hubVnetAddressPrefix
+    ]
+    name: hubvnetname
+    dnsServers: [
+      dcIPaddress
+    ]
+    subnets: [
+      {
+        name: 'GatewaySubnet'
+        addressPrefix: '10.0.1.0/24'
+      }
+      {
+        name: 'AzureFirewallSubnet'
+        addressPrefix: '10.0.2.0/24'
+      }
+      {
+        name: adSubnetName
+        addressPrefix: adSubnetAddressPrefix
+      }
+      {
+        name: 'AzureBastionSubnet'
+        addressPrefix: '10.0.4.0/24'
+      }
+    ]
+  }
+}
+module spokevnetupdate '../bicep-registry-modules/avm/res/network/virtual-network/main.bicep' = {
+  scope: resourceGroup(hubrgname)
+  dependsOn: [
+    DC
+  ]
+  name: '${spokevnetname}-update'
+  params: {
+    location: location   
+    addressPrefixes: ['10.1.0.0/16']
+    dnsServers: [
+      dcIPaddress
+    ]
+    name: spokevnetname
+    subnets: [
+      {
+        name: 'Servers'
+        addressPrefix: '10.1.1.0/24'
+      }
+    ]
+  }
+}
+//Windows Server
+module windowsServer '../bicep-registry-modules/avm/res/compute/virtual-machine/main.bicep' = {
+  scope: resourceGroup(hubrgname)
+  name: 'windowsServer01'
+  params: {
+    osType: 'Windows'
+    zone: 1
+    adminPassword: adminpassword
+    adminUsername: adminusername
+    location: location
+    imageReference: {
+      publisher: 'MicrosoftWindowsServer'
+      offer: 'WindowsServer'
+      sku: '2019-Datacenter'
+      version: 'latest'
+    }
+    vmSize: 'Standard_D2s_v3'
+    name: 'WinServer01'
+    osDisk: {
+      name: 'osdisk'
+      caching: 'ReadWrite'
+      createOption: 'FromImage'
+      managedDisk: {
+        storageAccountType: 'Standard_LRS'
+      }
+    }
+    dataDisks: [
+      {
+        name: 'dataDisk1'
+        diskSizeGB: 128
+        lun: 0
+        createOption: 'Empty'
+        managedDisk: {
+          storageAccountType: 'Standard_LRS'
+        }
+      }
+    ]
+    nicConfigurations: [
+      {
+        name: 'winsrvnic1'
+        properties: {
+          ipConfigurations: [
+            {
+              name: 'ipconfig1'
+              properties: {
+                privateIPAllocationMethod: 'Dynamic'
+                subnet: {
+                  id: spokevnet.outputs.resourceId
+                }
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}
+module LxServer '../bicep-registry-modules/avm/res/compute/virtual-machine/main.bicep' = {
+  scope: resourceGroup(hubrgname)
+  name: 'LxServer01'
+  params: {
+    osType: 'Linux'
+    zone: 1
+    adminPassword: adminpassword
+    adminUsername: adminusername
+    location: location
+    imageReference: {
+      publisher: 'Canonical'
+      offer: 'UbuntuServer'
+      sku: '22.04-LTS'
+      version: 'latest'
+    }
+    vmSize: 'Standard_D2s_v3'
+    name: 'WinServer01'
+    osDisk: {
+      name: 'osdisk'
+      caching: 'ReadWrite'
+      createOption: 'FromImage'
+      managedDisk: {
+        storageAccountType: 'Standard_LRS'
+      }
+    }
+    dataDisks: [
+      {
+        name: 'dataDisk1'
+        diskSizeGB: 128
+        lun: 0
+        createOption: 'Empty'
+        managedDisk: {
+          storageAccountType: 'Standard_LRS'
+        }
+      }
+    ]
+    nicConfigurations: [
+      {
+        name: 'lxservernic1'
+        properties: {
+          ipConfigurations: [
+            {
+              name: 'ipconfig1'
+              properties: {
+                privateIPAllocationMethod: 'Dynamic'
+                subnet: {
+                  id: spokevnet.outputs.subnetResourceIds[0]
+                }
+              }
+            }
+          ]
+        }
+      }
+    ]
   }
 }

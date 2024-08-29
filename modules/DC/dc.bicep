@@ -23,12 +23,12 @@ param adSubnetAddressPrefix string
 param virtualNetworkAddressRange string
 
 @description('The location of resources, such as templates and DSC modules, that the template depends on')
-param _artifactsLocation string = 'https://raw.githubusercontent.com/fehsecorp/scommi/master/'
+param _artifactsLocation string = 'https://github.com/FehseCorp/basicenvironment/raw/main/modules/DC'
 
 @description('Auto-generated token to access _artifactsLocation')
 @secure()
 param _artifactsLocationSasToken string = ''
-param  virtualNetworkName string
+param virtualNetworkName string
 param adSubnetName string
 
 //var storageAccountName = '${uniqueString(resourceGroup().id)}adsa'
@@ -119,7 +119,7 @@ resource adVMName_CreateADForest 'Microsoft.Compute/virtualMachines/extensions@2
   properties: {
     publisher: 'Microsoft.Powershell'
     type: 'DSC'
-    typeHandlerVersion: '2.19'
+    typeHandlerVersion: '2.77'
     autoUpgradeMinorVersion: true
     settings: {
       ModulesUrl: '${_artifactsLocation}/DSC/CreateADPDC.zip${_artifactsLocationSasToken}'
@@ -140,18 +140,18 @@ resource adVMName_CreateADForest 'Microsoft.Compute/virtualMachines/extensions@2
   }
 }
 
-module UpdateVNetDNS 'updatevnet.bicep' /*TODO: replace with correct path to [concat(parameters('_artifactsLocation'), '/nestedtemplates/vnet-with-dns-server.json', parameters('_artifactsLocationSasToken'))]*/ = {
-  name: 'UpdateVNetDNS'
-  params: {
-    virtualNetworkName: virtualNetworkName
-    virtualNetworkAddressRange: virtualNetworkAddressRange
-    subnetName: adSubnetName
-    subnetRange: adSubnetAddressPrefix
-    DNSServerAddress: [
-      adNicIPAddress
-    ]
-  }
-  dependsOn: [
-    adVMName_CreateADForest
-  ]
-}
+// module UpdateVNetDNS 'updatevnet.bicep' /*TODO: replace with correct path to [concat(parameters('_artifactsLocation'), '/nestedtemplates/vnet-with-dns-server.json', parameters('_artifactsLocationSasToken'))]*/ = {
+//   name: 'UpdateVNetDNS'
+//   params: {
+//     virtualNetworkName: virtualNetworkName
+//     virtualNetworkAddressRange: virtualNetworkAddressRange
+//     subnetName: adSubnetName
+//     subnetRange: adSubnetAddressPrefix
+//     DNSServerAddress: [
+//       adNicIPAddress
+//     ]
+//   }
+//   dependsOn: [
+//     adVMName_CreateADForest
+//   ]
+// }

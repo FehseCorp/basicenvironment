@@ -95,5 +95,15 @@
             ConfigurationMode = 'ApplyOnly'
             RebootNodeIfNeeded = $true
         }
+        
+        Script script2
+	    {
+      	    SetScript =  { 
+                new-aduser -Name "admin2" -AccountPassword $Admincreds.Password -PasswordNeverExpires $true -Enabled $true
+            }
+            GetScript =  { @{} }
+            TestScript = { $false }
+	        DependsOn = "[LocalConfigurationManager]"
+        }
    }
 } 
