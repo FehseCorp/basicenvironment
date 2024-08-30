@@ -7,7 +7,7 @@ param dcIPaddress string = '10.0.3.4'
 
 var location = 'eastus'
 var hubrgname = 'hub-rg'
-var serversubnetname = 'spoke-servers'
+var spokergname = 'spoke-servers'
 var hubvnetname = 'hub-vnet'
 var spokevnetname = 'spoke-vnet'
 var adSubnetName = 'identity'
@@ -19,6 +19,14 @@ module hubrg '../bicep-registry-modules/avm/res/resources/resource-group/main.bi
   params: {
     location: location
     name: hubrgname
+  }
+}
+
+module spokerg '../bicep-registry-modules/avm/res/resources/resource-group/main.bicep' = {
+  name: spokergname
+  params: {
+    location: location
+    name: spokergname
   }
 }
 
@@ -231,7 +239,7 @@ module spokevnetupdate '../bicep-registry-modules/avm/res/network/virtual-networ
 //   }
 // }
 module LxServer '../bicep-registry-modules/avm/res/compute/virtual-machine/main.bicep' = {
-  scope: resourceGroup(serversubnetname)
+  scope: resourceGroup(spokergname)
   name: 'LxServer01'
   params: {
     osType: 'Linux'

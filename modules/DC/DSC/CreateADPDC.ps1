@@ -98,7 +98,7 @@
         
         xADUser NewUser {
             UserName           = "admin2"
-            Password           = $DomainCreds.Password
+            Password           = $Admincreds.Password
             Ensure             = "Present"
             GivenName          = "Admin"
             Surname            = "Two"
