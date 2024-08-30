@@ -96,14 +96,16 @@
             RebootNodeIfNeeded = $true
         }
         
-        Script script2
-	    {
-      	    SetScript =  { 
-                new-aduser -Name "admin2" -AccountPassword $Admincreds.Password -PasswordNeverExpires $true -Enabled $true
-            }
-            GetScript =  { @{} }
-            TestScript = { $false }
-	        DependsOn = "[LocalConfigurationManager]"
+        xADUser NewUser {
+            UserName           = "admin2"
+            Password           = $DomainCreds.Password
+            Ensure             = "Present"
+            GivenName          = "Admin"
+            Surname            = "Two"
+            DisplayName        = "Admin Two"
+            #Path               = "OU=Users,DC=example,DC=com"
+            Enabled            = $true
+            DependsOn = "[xADDomain]FirstDS"
         }
    }
 } 

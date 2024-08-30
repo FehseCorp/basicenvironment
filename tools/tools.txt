@@ -1,1 +1,4 @@
+cd modules\DC\DSC
+rm ./CreateADPDC.zip
 Compress-Archive ./* CreateADPDC.zip 
+cd -

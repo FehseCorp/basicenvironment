@@ -1,12 +1,13 @@
 targetScope = 'subscription'
 
-param adminusername string
+param adminusername string='azureadmin'
 @secure()
 param adminpassword string
-param dcIPaddress string
+param dcIPaddress string = '10.0.3.4'
 
 var location = 'eastus'
 var hubrgname = 'hub-rg'
+var serversubnetname = 'spoke-servers'
 var hubvnetname = 'hub-vnet'
 var spokevnetname = 'spoke-vnet'
 var adSubnetName = 'identity'
@@ -173,64 +174,64 @@ module spokevnetupdate '../bicep-registry-modules/avm/res/network/virtual-networ
   }
 }
 //Windows Server
-module windowsServer '../bicep-registry-modules/avm/res/compute/virtual-machine/main.bicep' = {
-  scope: resourceGroup(hubrgname)
-  name: 'windowsServer01'
-  params: {
-    osType: 'Windows'
-    zone: 1
-    adminPassword: adminpassword
-    adminUsername: adminusername
-    location: location
-    imageReference: {
-      publisher: 'MicrosoftWindowsServer'
-      offer: 'WindowsServer'
-      sku: '2019-Datacenter'
-      version: 'latest'
-    }
-    vmSize: 'Standard_D2s_v3'
-    name: 'WinServer01'
-    osDisk: {
-      name: 'osdisk'
-      caching: 'ReadWrite'
-      createOption: 'FromImage'
-      managedDisk: {
-        storageAccountType: 'Standard_LRS'
-      }
-    }
-    dataDisks: [
-      {
-        name: 'dataDisk1'
-        diskSizeGB: 128
-        lun: 0
-        createOption: 'Empty'
-        managedDisk: {
-          storageAccountType: 'Standard_LRS'
-        }
-      }
-    ]
-    nicConfigurations: [
-      {
-        name: 'winsrvnic1'
-        properties: {
-          ipConfigurations: [
-            {
-              name: 'ipconfig1'
-              properties: {
-                privateIPAllocationMethod: 'Dynamic'
-                subnet: {
-                  id: spokevnet.outputs.resourceId
-                }
-              }
-            }
-          ]
-        }
-      }
-    ]
-  }
-}
+// module windowsServer '../bicep-registry-modules/avm/res/compute/virtual-machine/main.bicep' = {
+//   scope: resourceGroup(hubrgname)
+//   name: 'windowsServer01'
+//   params: {
+//     osType: 'Windows'
+//     zone: 1
+//     adminPassword: adminpassword
+//     adminUsername: adminusername
+//     location: location
+//     imageReference: {
+//       publisher: 'MicrosoftWindowsServer'
+//       offer: 'WindowsServer'
+//       sku: '2019-Datacenter'
+//       version: 'latest'
+//     }
+//     vmSize: 'Standard_D2s_v3'
+//     name: 'WinServer01'
+//     osDisk: {
+//       name: 'osdisk'
+//       caching: 'ReadWrite'
+//       createOption: 'FromImage'
+//       managedDisk: {
+//         storageAccountType: 'Standard_LRS'
+//       }
+//     }
+//     dataDisks: [
+//       {
+//         name: 'dataDisk1'
+//         diskSizeGB: 128
+//         lun: 0
+//         createOption: 'Empty'
+//         managedDisk: {
+//           storageAccountType: 'Standard_LRS'
+//         }
+//       }
+//     ]
+//     nicConfigurations: [
+//       {
+//         name: 'winsrvnic1'
+//         properties: {
+//           ipConfigurations: [
+//             {
+//               name: 'ipconfig1'
+//               properties: {
+//                 privateIPAllocationMethod: 'Dynamic'
+//                 subnet: {
+//                   id: spokevnet.outputs.resourceId
+//                 }
+//               }
+//             }
+//           ]
+//         }
+//       }
+//     ]
+//   }
+// }
 module LxServer '../bicep-registry-modules/avm/res/compute/virtual-machine/main.bicep' = {
-  scope: resourceGroup(hubrgname)
+  scope: resourceGroup(serversubnetname)
   name: 'LxServer01'
   params: {
     osType: 'Linux'
@@ -239,13 +240,13 @@ module LxServer '../bicep-registry-modules/avm/res/compute/virtual-machine/main.
     adminUsername: adminusername
     location: location
     imageReference: {
-      publisher: 'Canonical'
-      offer: 'UbuntuServer'
-      sku: '22.04-LTS'
+      publisher: 'canonical'
+      offer: '0001-com-ubuntu-server-jammy'
+      sku: '22_04-lts-gen2'
       version: 'latest'
     }
     vmSize: 'Standard_D2s_v3'
-    name: 'WinServer01'
+    name: 'LxServer01'
     osDisk: {
       name: 'osdisk'
       caching: 'ReadWrite'
@@ -254,33 +255,15 @@ module LxServer '../bicep-registry-modules/avm/res/compute/virtual-machine/main.
         storageAccountType: 'Standard_LRS'
       }
     }
-    dataDisks: [
-      {
-        name: 'dataDisk1'
-        diskSizeGB: 128
-        lun: 0
-        createOption: 'Empty'
-        managedDisk: {
-          storageAccountType: 'Standard_LRS'
-        }
-      }
-    ]
     nicConfigurations: [
       {
-        name: 'lxservernic1'
-        properties: {
-          ipConfigurations: [
-            {
-              name: 'ipconfig1'
-              properties: {
-                privateIPAllocationMethod: 'Dynamic'
-                subnet: {
-                  id: spokevnet.outputs.subnetResourceIds[0]
-                }
-              }
-            }
-          ]
-        }
+        ipConfigurations: [
+          {
+            name: 'ipconfig01'
+            subnetResourceId: spokevnet.outputs.subnetResourceIds[0]
+          }
+        ]
+        nicSuffix: 'lx-nic-01'
       }
     ]
   }
