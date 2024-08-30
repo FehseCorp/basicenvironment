@@ -96,17 +96,17 @@
             RebootNodeIfNeeded = $true
         }
         
-        xADUser NewUser {
-            UserName           = "admin2"
-            Password           = $Admincreds.Password
-            Ensure             = "Present"
-            GivenName          = "Admin"
-            Surname            = "Two"
-            DisplayName        = "Admin Two"
-            #Path              = "OU=Users,DC=example,DC=com"
-            Enabled            = $true
-            DomainName         = $DomainName
-            DependsOn          = "[xADDomain]FirstDS"
-        }
+        # xADUser NewUser {
+        #     UserName           = "admin2"
+        #     Password           = $Admincreds.Password
+        #     Ensure             = "Present"
+        #     GivenName          = "Admin"
+        #     Surname            = "Two"
+        #     DisplayName        = "Admin Two"
+        #     #Path              = "OU=Users,DC=example,DC=com"
+        #     Enabled            = $true
+        #     DomainName         = $DomainName
+        #     DependsOn          = "[xADDomain]FirstDS"
+        # }
    }
 } 
