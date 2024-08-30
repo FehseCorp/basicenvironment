@@ -103,9 +103,10 @@
             GivenName          = "Admin"
             Surname            = "Two"
             DisplayName        = "Admin Two"
-            #Path               = "OU=Users,DC=example,DC=com"
+            #Path              = "OU=Users,DC=example,DC=com"
             Enabled            = $true
-            DependsOn = "[xADDomain]FirstDS"
+            DomainName         = $DomainName
+            DependsOn          = "[xADDomain]FirstDS"
         }
    }
 } 
