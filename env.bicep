@@ -7,7 +7,7 @@ param dcIPaddress string = '10.0.3.4'
 
 var location = 'eastus'
 var hubrgname = 'hub-rg'
-var spokergname = 'spoke-servers'
+var spokergname = 'spoke-rg'
 var hubvnetname = 'hub-vnet'
 var spokevnetname = 'spoke-vnet'
 var adSubnetName = 'identity'
@@ -60,7 +60,7 @@ module hubvnet '../bicep-registry-modules/avm/res/network/virtual-network/main.b
   }
 }
 module spokevnet '../bicep-registry-modules/avm/res/network/virtual-network/main.bicep' = {
-  scope: resourceGroup(hubrgname)
+  scope: resourceGroup(spokergname)
   name: spokevnetname
   params: {
     location: location   
@@ -87,7 +87,7 @@ module peerings1 '../bicep-registry-modules/avm/res/network/virtual-network/virt
 }
 
 module peerings2 '../bicep-registry-modules/avm/res/network/virtual-network/virtual-network-peering/main.bicep' = {
-  scope: resourceGroup(hubrgname)
+  scope: resourceGroup(spokergname)
   name: 'spoke-to-hub'
   params: {
     localVnetName: spokevnetname
@@ -106,29 +106,48 @@ module bastion '../bicep-registry-modules/avm/res/network/bastion-host/main.bice
     virtualNetworkResourceId: hubvnet.outputs.resourceId
   }
 }
-// DC
-module DC './modules/DC/dc.bicep' = {
+// DCNew
+module dcnew './modules/DC/dcnew.bicep' = {
   scope: resourceGroup(hubrgname)
-  name: 'dc'
+  name: 'dcnew'
   dependsOn: [
     hubvnet
   ]
   params: {
-    adminPassword: adminpassword
-    adminUsername: adminusername
+    adminpassword: adminpassword
+    adminusername: adminusername
+    dcIPaddress: dcIPaddress
+    dcrgname: hubrgname
+    location: location
+    subnetresourceid: hubvnet.outputs.subnetResourceIds[2]
     domainName: 'contoso.com'
-    adNicIPAddress: dcIPaddress
-    adSubnetAddressPrefix: adSubnetAddressPrefix
-    adSubnetName: adSubnetName
-    virtualNetworkAddressRange: hubVnetAddressPrefix
-    virtualNetworkName: hubvnetname
+
   }
 }
+
+// DC
+// module DC './modules/DC/dc.bicep' = {
+//   scope: resourceGroup(hubrgname)
+//   name: 'dc'
+//   dependsOn: [
+//     hubvnet
+//   ]
+//   params: {
+//     adminPassword: adminpassword
+//     adminUsername: adminusername
+//     domainName: 'contoso.com'
+//     adNicIPAddress: dcIPaddress
+//     adSubnetAddressPrefix: adSubnetAddressPrefix
+//     adSubnetName: adSubnetName
+//     virtualNetworkAddressRange: hubVnetAddressPrefix
+//     virtualNetworkName: hubvnetname
+//   }
+// }
 
 module hubvnetupdate '../bicep-registry-modules/avm/res/network/virtual-network/main.bicep' = {
   name: '${hubvnetname}-update'
   dependsOn: [
-    DC
+    dcnew
   ]
   scope: resourceGroup('hub-rg')
   params: {
@@ -163,7 +182,7 @@ module hubvnetupdate '../bicep-registry-modules/avm/res/network/virtual-network/
 module spokevnetupdate '../bicep-registry-modules/avm/res/network/virtual-network/main.bicep' = {
   scope: resourceGroup(hubrgname)
   dependsOn: [
-    DC
+    dcnew
   ]
   name: '${spokevnetname}-update'
   params: {
@@ -182,62 +201,45 @@ module spokevnetupdate '../bicep-registry-modules/avm/res/network/virtual-networ
   }
 }
 //Windows Server
-// module windowsServer '../bicep-registry-modules/avm/res/compute/virtual-machine/main.bicep' = {
-//   scope: resourceGroup(hubrgname)
-//   name: 'windowsServer01'
-//   params: {
-//     osType: 'Windows'
-//     zone: 1
-//     adminPassword: adminpassword
-//     adminUsername: adminusername
-//     location: location
-//     imageReference: {
-//       publisher: 'MicrosoftWindowsServer'
-//       offer: 'WindowsServer'
-//       sku: '2019-Datacenter'
-//       version: 'latest'
-//     }
-//     vmSize: 'Standard_D2s_v3'
-//     name: 'WinServer01'
-//     osDisk: {
-//       name: 'osdisk'
-//       caching: 'ReadWrite'
-//       createOption: 'FromImage'
-//       managedDisk: {
-//         storageAccountType: 'Standard_LRS'
-//       }
-//     }
-//     dataDisks: [
-//       {
-//         name: 'dataDisk1'
-//         diskSizeGB: 128
-//         lun: 0
-//         createOption: 'Empty'
-//         managedDisk: {
-//           storageAccountType: 'Standard_LRS'
-//         }
-//       }
-//     ]
-//     nicConfigurations: [
-//       {
-//         name: 'winsrvnic1'
-//         properties: {
-//           ipConfigurations: [
-//             {
-//               name: 'ipconfig1'
-//               properties: {
-//                 privateIPAllocationMethod: 'Dynamic'
-//                 subnet: {
-//                   id: spokevnet.outputs.resourceId
-//                 }
-//               }
-//             }
-//           ]
-//         }
-//       }
-//     ]
-//   }
-// }
+module WinServer '../bicep-registry-modules/avm/res/compute/virtual-machine/main.bicep' = {
+  scope: resourceGroup(spokergname)
+  name: 'WinServer01'
+  params: {
+    osType: 'Windows'
+    zone: 1
+    adminPassword: adminpassword
+    adminUsername: adminusername
+    location: location
+    imageReference: {
+      publisher: 'MicrosoftWindowsServer'
+      offer: 'WindowsServer'
+      sku: '2019-Datacenter'
+      version: 'latest'
+    }
+    vmSize: 'Standard_D2s_v3'
+    name: 'WinServer01'
+    osDisk: {
+      name: 'osdisk-WinServer01'
+      caching: 'ReadWrite'
+      createOption: 'FromImage'
+      managedDisk: {
+        storageAccountType: 'Standard_LRS'
+      }
+    }
+    nicConfigurations: [
+      {
+        ipConfigurations: [
+          {
+            name: 'ipconfig01'
+            subnetResourceId: spokevnet.outputs.subnetResourceIds[0]
+          }
+        ]
+        nicSuffix: 'win-nic-01'
+      }
+    ]
+  }
+}
+
 module LxServer '../bicep-registry-modules/avm/res/compute/virtual-machine/main.bicep' = {
   scope: resourceGroup(spokergname)
   name: 'LxServer01'
@@ -256,7 +258,7 @@ module LxServer '../bicep-registry-modules/avm/res/compute/virtual-machine/main.
     vmSize: 'Standard_D2s_v3'
     name: 'LxServer01'
     osDisk: {
-      name: 'osdisk'
+      name: 'osdisk-LxServer01'
       caching: 'ReadWrite'
       createOption: 'FromImage'
       managedDisk: {
